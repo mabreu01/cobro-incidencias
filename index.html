@@ -1,1 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0b4f9c">
+<title>Cobro por Incidencias</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef3f8;font-family:Arial,sans-serif;color:#17212b}
+header{background:#0b4f9c;color:white;padding:18px;text-align:center}
+header h1{margin:0;font-size:28px} header p{margin:6px 0 0;font-size:15px}
+main{max-width:720px;margin:auto;padding:14px}
+.card{background:white;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 9px #0002}
+label{display:block;font-size:18px;font-weight:bold;margin:10px 0 7px}
+input{width:100%;height:58px;border:2px solid #b9c7d6;border-radius:12px;padding:8px 12px;font-size:25px;background:#fff}
+button{width:100%;min-height:58px;border:0;border-radius:12px;margin-top:12px;font-size:20px;font-weight:bold}
+.calc{background:#e5edf7;color:#0b4f9c}.pay{background:#0b4f9c;color:#fff}
+.tabs{display:flex;gap:8px}.tabs button{margin:0;background:#dce7f3;color:#164d83}.tabs .active{background:#0b4f9c;color:white}
+.amount{text-align:center;border:3px solid #0b4f9c;border-radius:14px;padding:16px;margin-top:15px}
+.amount small{display:block;font-size:16px}.amount strong{font-size:42px;color:#0b4f9c}
+.info{font-size:18px;text-align:center;margin-top:10px}.ok{color:#087b36;font-weight:bold}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}th{background:#eaf1f8}
+.hidden{display:none}.search{margin-bottom:10px}
+@media(max-width:500px){header h1{font-size:24px}main{padding:9px}.card{padding:13px}.amount strong{font-size:38px}}
+@media print{header,.tabs,.no-print,.search{display:none!important}.card{box-shadow:none}.report-only{display:block!important}body{background:#fff}}
+</style>
+</head>
+<body>
+<header><h1>COBRO POR INCIDENCIAS</h1><p>Control de contingencia y cobro de tickets</p></header>
+<main>
+<div class="tabs no-print">
+<button id="tabCobro" class="active" onclick="showTab('cobro')">COBRO</button>
+<button id="tabReporte" onclick="showTab('reporte')">REPORTE</button>
+</div>
 
+<section id="cobro" class="card">
+<label for="ticket">Número de ticket</label>
+<input id="ticket" inputmode="numeric" autocomplete="off" placeholder="Digite el ticket">
+
+<label for="entrada">Hora de entrada</label>
+<input id="entrada" type="time" step="60">
+
+<label for="salida">Hora de salida</label>
+<input id="salida" type="time" step="60">
+
+<button class="calc no-print" onclick="calcular()">CALCULAR MONTO</button>
+
+<div class="amount">
+<small>MONTO A PAGAR</small>
+<strong id="monto">RD$0</strong>
+<div id="detalle" class="info">Digite las horas de entrada y salida.</div>
+</div>
+
+<button class="pay no-print" onclick="pagar()">PAGAR Y REGISTRAR TICKET</button>
+<div id="estado" class="info"></div>
+</section>
+
+<section id="reporte" class="card hidden">
+<h2>Reporte de tickets cobrados</h2>
+<input class="search" id="buscar" placeholder="Buscar por número de ticket" oninput="renderReporte()">
+<div id="resumen" class="info"></div>
+<div style="overflow:auto">
+<table><thead><tr><th>Ticket</th><th>Entrada</th><th>Salida</th><th>Tiempo</th><th>Monto</th></tr></thead>
+<tbody id="tabla"></tbody></table>
+</div>
+<button class="calc no-print" onclick="window.print()">IMPRIMIR REPORTE</button>
+</section>
+</main>
+
+<script>
+const KEY='cobro_incidencias_v1';
+let registros=JSON.parse(localStorage.getItem(KEY)||'[]');
+
+function minutos(h){
+  if(!h || !/^\d{2}:\d{2}$/.test(h)) return null;
+  const p=h.split(':').map(Number);
+  return p[0]*60+p[1];
+}
+function calcular(){
+  const e=minutos(document.getElementById('entrada').value);
+  const s=minutos(document.getElementById('salida').value);
+  const monto=document.getElementById('monto');
+  const detalle=document.getElementById('detalle');
+  if(e===null||s===null){
+    monto.textContent='RD$0'; detalle.textContent='Digite las horas de entrada y salida.'; return null;
+  }
+  let d=s-e;
+  if(d<0)d+=1440;
+  let total=0;
+  if(d<=30) total=0;
+  else if(d<=60) total=100;
+  else total=100+Math.ceil((d-60)/60)*50;
+  monto.textContent='RD$'+total.toLocaleString('es-DO');
+  detalle.textContent='Tiempo estacionado: '+formato(d);
+  return {d,total};
+}
+function formato(m){
+  const h=Math.floor(m/60), min=m%60;
+  return (h?h+' h ':'')+(min?min+' min':(h?'':'0 min'));
+}
+function pagar(){
+  const ticket=document.getElementById('ticket').value.trim();
+  if(!ticket){alert('Digite el número de ticket.');return}
+  const r=calcular();
+  if(!r){alert('Digite correctamente la hora de entrada y salida.');return}
+  if(registros.some(x=>x.ticket===ticket)){alert('Ese ticket ya está registrado como pagado.');return}
+  registros.push({
+    ticket,
+    entrada:document.getElementById('entrada').value,
+    salida:document.getElementById('salida').value,
+    minutos:r.d,total:r.total,
+    fecha:new Date().toLocaleString('es-DO'),
+    estado:'PAGADO'
+  });
+  localStorage.setItem(KEY,JSON.stringify(registros));
+  document.getElementById('estado').innerHTML='<span class="ok">✓ TICKET PAGADO Y REGISTRADO</span>';
+  setTimeout(()=>{
+    document.getElementById('ticket').value='';
+    document.getElementById('entrada').value='';
+    document.getElementById('salida').value='';
+    document.getElementById('monto').textContent='RD$0';
+    document.getElementById('detalle').textContent='Listo para el siguiente ticket.';
+    document.getElementById('estado').textContent='';
+    document.getElementById('ticket').focus();
+  },900);
+}
+function showTab(t){
+  document.getElementById('cobro').classList.toggle('hidden',t!=='cobro');
+  document.getElementById('reporte').classList.toggle('hidden',t!=='reporte');
+  document.getElementById('tabCobro').classList.toggle('active',t==='cobro');
+  document.getElementById('tabReporte').classList.toggle('active',t==='reporte');
+  if(t==='reporte')renderReporte();
+}
+function renderReporte(){
+  const q=document.getElementById('buscar').value.trim().toLowerCase();
+  const rows=registros.filter(x=>x.ticket.toLowerCase().includes(q));
+  const total=registros.reduce((a,x)=>a+x.total,0);
+  document.getElementById('resumen').textContent=registros.length+' ticket(s) | Total recaudado: RD$'+total.toLocaleString('es-DO');
+  document.getElementById('tabla').innerHTML=rows.map(x=>`<tr><td>${x.ticket}</td><td>${x.entrada}</td><td>${x.salida}</td><td>${formato(x.minutos)}</td><td>RD$${x.total.toLocaleString('es-DO')}</td></tr>`).join('');
+}
+['entrada','salida'].forEach(id=>{
+  const el=document.getElementById(id);
+  ['input','change','blur','keyup'].forEach(ev=>el.addEventListener(ev,calcular));
+});
+document.getElementById('ticket').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('entrada').focus()});
+document.getElementById('entrada').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('salida').focus()});
+document.getElementById('salida').addEventListener('keydown',e=>{if(e.key==='Enter')calcular()});
+</script>
+</body>
+</html>
