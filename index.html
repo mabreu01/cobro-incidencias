@@ -36,7 +36,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 
 <section id="cobro" class="card">
 <label for="ticket">Número de ticket</label>
-<input id="ticket" inputmode="numeric" autocomplete="off" placeholder="Digite el ticket">
+<input id="ticket" autocomplete="off" placeholder="Escanee el código QR o digite el ticket">
+<button type="button" class="calc no-print" onclick="activarEscaner()">📷 LEER TICKET CON QR</button>
+<div id="scanEstado" class="info">Conecte el lector QR y pulse el botón antes de escanear.</div>
 
 <label for="entrada">Hora de entrada</label>
 <input id="entrada" type="time" step="60">
@@ -99,6 +101,12 @@ function formato(m){
   const h=Math.floor(m/60), min=m%60;
   return (h?h+' h ':'')+(min?min+' min':(h?'':'0 min'));
 }
+function activarEscaner(){
+  const campo=document.getElementById('ticket');
+  campo.value='';
+  document.getElementById('scanEstado').textContent='Listo para escanear. Apunte el lector al QR del ticket.';
+  campo.focus();
+}
 function pagar(){
   const ticket=document.getElementById('ticket').value.trim();
   if(!ticket){alert('Digite el número de ticket.');return}
@@ -143,7 +151,16 @@ function renderReporte(){
   const el=document.getElementById(id);
   ['input','change','blur','keyup'].forEach(ev=>el.addEventListener(ev,calcular));
 });
-document.getElementById('ticket').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('entrada').focus()});
+document.getElementById('ticket').addEventListener('input',()=>{
+  const valor=document.getElementById('ticket').value.trim();
+  if(valor)document.getElementById('scanEstado').textContent='Ticket leído: '+valor;
+});
+document.getElementById('ticket').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    document.getElementById('entrada').focus();
+  }
+});
 document.getElementById('entrada').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('salida').focus()});
 document.getElementById('salida').addEventListener('keydown',e=>{if(e.key==='Enter')calcular()});
 </script>
