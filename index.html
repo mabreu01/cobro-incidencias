@@ -55,8 +55,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 </div>
 
 <section id="cobro" class="card">
-<label for="ticket">Número de ticket</label>
-<input id="ticket" autocomplete="off" placeholder="Escanee el código QR o digite el ticket">
+<label for="ticket">Número de ticket (opcional)</label>
+<input id="ticket" autocomplete="off" placeholder="Escanee, digite el ticket o déjelo en blanco">
 <button type="button" class="calc no-print" onclick="activarEscaner()">📷 LEER TICKET CON QR</button>
 <div id="scanEstado" class="info">Conecte el lector QR y pulse el botón antes de escanear.</div>
 
@@ -169,10 +169,10 @@ function activarEscaner(){
   campo.focus();
 }
 function pagar(){
-  const ticket=document.getElementById('ticket').value.trim();
-  if(!ticket){alert('Digite el número de ticket.');return}
+  let ticket=document.getElementById('ticket').value.trim();
   const r=calcular();
   if(!r){alert('Digite correctamente la hora de entrada y salida.');return}
+  if(!ticket) ticket='SIN-TICKET-'+Date.now();
   if(registros.some(x=>x.ticket===ticket)){alert('Ese ticket ya está registrado como pagado.');return}
   registros.push({
     ticket,
