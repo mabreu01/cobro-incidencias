@@ -94,10 +94,12 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <tbody id="tabla"></tbody></table>
 </div>
 <button class="calc no-print" onclick="window.print()">IMPRIMIR REPORTE</button>
+<button class="pay no-print" onclick="imprimirCierre()">IMPRIMIR CIERRE DE CAJA</button>
 </section>
 </main>
 
 <div id="printTicket" class="receipt" aria-hidden="true"></div>
+<div id="printCierre" class="receipt" aria-hidden="true"></div>
 
 <script>
 const KEY='cobro_incidencias_v1';
@@ -249,6 +251,42 @@ function showTab(t){
   document.getElementById('tabCobro').classList.toggle('active',t==='cobro');
   document.getElementById('tabReporte').classList.toggle('active',t==='reporte');
   if(t==='reporte')renderReporte();
+}
+function imprimirCierre(){
+  if(!registros.length){alert('No hay cobros registrados para cerrar.');return}
+  const ahora=new Date();
+  const total=registros.reduce((s,x)=>s+Number(x.total||0),0);
+  const fecha=ahora.toLocaleDateString('es-DO');
+  const hora=ahora.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const area=document.getElementById('printCierre');
+  area.innerHTML=`
+    <h2>CIERRE DE CAJA</h2>
+    <div><strong>COBRO POR INCIDENCIAS</strong></div>
+    <div class="small">RESUMEN DE COBROS REGISTRADOS</div>
+    <div class="line"></div>
+    <div class="left">
+      <div><strong>Fecha de cierre:</strong> ${fecha}</div>
+      <div><strong>Hora de cierre:</strong> ${hora}</div>
+      <div><strong>Cantidad de tickets:</strong> ${registros.length}</div>
+    </div>
+    <div class="line"></div>
+    <div class="left"><strong>DETALLE DE TICKETS</strong></div>
+    <table style="font-size:10px;width:100%;border-collapse:collapse">
+      <thead><tr><th style="padding:3px 1px;text-align:left">Ticket</th><th style="padding:3px 1px;text-align:left">Hora</th><th style="padding:3px 1px;text-align:right">Monto</th></tr></thead>
+      <tbody>${registros.map(x=>`<tr><td style="padding:3px 1px">${escaparHTML(x.ticket)}</td><td style="padding:3px 1px">${escaparHTML(x.salida||'')}</td><td style="padding:3px 1px;text-align:right">RD${Number(x.total||0).toLocaleString('es-DO')}</td></tr>`).join('')}</tbody>
+    </table>
+    <div class="line"></div>
+    <div class="total">TOTAL RECAUDADO<br>RD${total.toLocaleString('es-DO')}</div>
+    <div class="line"></div>
+    <div class="left">Firma del operador: __________________</div>
+    <div style="margin-top:10px">Fin del cierre</div>
+    <div class="small">Documento interno — no fiscal</div>
+  `;
+  document.body.classList.add('printing-close');
+  const limpiar=()=>{document.body.classList.remove('printing-close');window.removeEventListener('afterprint',limpiar)};
+  window.addEventListener('afterprint',limpiar);
+  window.print();
+  setTimeout(limpiar,1500);
 }
 function renderReporte(){
   const q=document.getElementById('buscar').value.trim().toLowerCase();
