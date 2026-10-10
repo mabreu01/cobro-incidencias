@@ -14,6 +14,11 @@ main{max-width:720px;margin:auto;padding:14px}
 .card{background:white;border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 2px 9px #0002}
 label{display:block;font-size:18px;font-weight:bold;margin:10px 0 7px}
 input{width:100%;height:58px;border:2px solid #b9c7d6;border-radius:12px;padding:8px 12px;font-size:25px;background:#fff}
+.time-entry{display:flex;gap:8px;align-items:center}
+.time-entry input{flex:1;min-width:0}
+.time-entry .time-now{width:112px;flex-shrink:0;margin:0;min-height:58px;font-size:17px}
+.time-help{font-size:14px;color:#536579;margin:8px 0 14px}
+@media(max-width:380px){.time-entry .time-now{width:90px;font-size:15px}}
 button{width:100%;min-height:58px;border:0;border-radius:12px;margin-top:12px;font-size:20px;font-weight:bold}
 .calc{background:#e5edf7;color:#0b4f9c}.pay{background:#0b4f9c;color:#fff}
 .tabs{display:flex;gap:8px}.tabs button{margin:0;background:#dce7f3;color:#164d83}.tabs .active{background:#0b4f9c;color:white}
@@ -41,10 +46,17 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <div id="scanEstado" class="info">Conecte el lector QR y pulse el botón antes de escanear.</div>
 
 <label for="entrada">Hora de entrada</label>
-<input id="entrada" type="time" step="60">
+<div class="time-entry">
+  <input id="entrada" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej. 08:35" maxlength="5" aria-label="Hora de entrada en formato horas y minutos">
+  <button type="button" class="calc time-now no-print" onclick="ponerHora('entrada')">AHORA</button>
+</div>
 
 <label for="salida">Hora de salida</label>
-<input id="salida" type="time" step="60">
+<div class="time-entry">
+  <input id="salida" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej. 10:15" maxlength="5" aria-label="Hora de salida en formato horas y minutos">
+  <button type="button" class="calc time-now no-print" onclick="ponerHora('salida')">AHORA</button>
+</div>
+<p class="time-help">Escriba la hora con 4 números, por ejemplo 0835, o use el botón AHORA. Puede usar el teclado numérico de Android.</p>
 
 <button class="calc no-print" onclick="calcular()">CALCULAR MONTO</button>
 
@@ -74,10 +86,40 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 const KEY='cobro_incidencias_v1';
 let registros=JSON.parse(localStorage.getItem(KEY)||'[]');
 
+function normalizarHora(valor){
+  let h=String(valor||'').trim().replace(/[^0-9:]/g,'');
+  if(/^\d{4}$/.test(h)) h=h.slice(0,2)+':'+h.slice(2);
+  if(!/^\d{1,2}:\d{2}$/.test(h)) return '';
+  const p=h.split(':').map(Number);
+  if(p[0]>23||p[1]>59) return '';
+  return String(p[0]).padStart(2,'0')+':'+String(p[1]).padStart(2,'0');
+}
 function minutos(h){
-  if(!h || !/^\d{2}:\d{2}$/.test(h)) return null;
+  h=normalizarHora(h);
+  if(!h) return null;
   const p=h.split(':').map(Number);
   return p[0]*60+p[1];
+}
+function ponerHora(id){
+  const ahora=new Date();
+  const hora=String(ahora.getHours()).padStart(2,'0')+':'+String(ahora.getMinutes()).padStart(2,'0');
+  document.getElementById(id).value=hora;
+  calcular();
+}
+function prepararHora(el){
+  el.addEventListener('blur',()=>{
+    if(!el.value.trim()) return;
+    const h=normalizarHora(el.value);
+    if(h) el.value=h;
+    else alert('Hora no válida. Use formato HH:MM, por ejemplo 08:35 o 0835.');
+    calcular();
+  });
+  el.addEventListener('input',()=>{
+    let v=el.value.replace(/[^0-9:]/g,'').slice(0,5);
+    if(/^\d{4}$/.test(v)) v=v.slice(0,2)+':'+v.slice(2);
+    el.value=v;
+    calcular();
+  });
 }
 function calcular(){
   const e=minutos(document.getElementById('entrada').value);
@@ -147,10 +189,7 @@ function renderReporte(){
   document.getElementById('resumen').textContent=registros.length+' ticket(s) | Total recaudado: RD$'+total.toLocaleString('es-DO');
   document.getElementById('tabla').innerHTML=rows.map(x=>`<tr><td>${x.ticket}</td><td>${x.entrada}</td><td>${x.salida}</td><td>${formato(x.minutos)}</td><td>RD$${x.total.toLocaleString('es-DO')}</td></tr>`).join('');
 }
-['entrada','salida'].forEach(id=>{
-  const el=document.getElementById(id);
-  ['input','change','blur','keyup'].forEach(ev=>el.addEventListener(ev,calcular));
-});
+['entrada','salida'].forEach(id=>prepararHora(document.getElementById(id)));
 document.getElementById('ticket').addEventListener('input',()=>{
   const valor=document.getElementById('ticket').value.trim();
   if(valor)document.getElementById('scanEstado').textContent='Ticket leído: '+valor;
