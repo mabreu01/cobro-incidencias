@@ -283,10 +283,21 @@ function imprimirCierre(){
     <div class="small">Documento interno — no fiscal</div>
   `;
   document.body.classList.add('printing-close');
-  const limpiar=()=>{document.body.classList.remove('printing-close');window.removeEventListener('afterprint',limpiar)};
+  let cierreProcesado=false;
+  const limpiar=()=>{
+    document.body.classList.remove('printing-close');
+    window.removeEventListener('afterprint',limpiar);
+    if(cierreProcesado)return;
+    cierreProcesado=true;
+    // El cierre impreso conserva el resumen; se vacía el registro para iniciar un nuevo turno.
+    registros=[];
+    localStorage.setItem(KEY,JSON.stringify(registros));
+    document.getElementById('buscar').value='';
+    renderReporte();
+  };
   window.addEventListener('afterprint',limpiar);
   window.print();
-  setTimeout(limpiar,1500);
+  setTimeout(limpiar,2000);
 }
 function renderReporte(){
   const q=document.getElementById('buscar').value.trim().toLowerCase();
