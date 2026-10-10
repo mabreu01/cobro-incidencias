@@ -42,6 +42,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 .receipt .left{text-align:left}
 .receipt .total{font-size:20px;font-weight:bold;margin:8px 0}
 .receipt .small{font-size:10px}
+.qr-wrap{display:flex;justify-content:center;align-items:center;margin:6px 0;min-height:34mm}
+.qr-wrap img,.qr-wrap canvas{width:34mm!important;height:34mm!important;image-rendering:pixelated}
 </style>
 </head>
 <body>
@@ -220,8 +222,18 @@ function imprimirComprobante(x){
     <div class="total">TOTAL PAGADO: RD${x.total.toLocaleString('es-DO')}</div>
     <div class="line"></div>
     <div>Gracias por su visita</div>
-    <div class="small">Conserve este comprobante</div>
+    <div class="small">Escanee el QR para ver los datos de este recibo</div>
+    <div id="receiptQr" class="qr-wrap"></div>
+    <div class="small">Comprobante interno</div>
   `;
+  const qrText=JSON.stringify({comprobante:x.numero,ticket:x.ticket,fecha:x.fecha,hora:x.hora,entrada:x.entrada,salida:x.salida,tiempo:formato(x.minutos),total:x.total,moneda:'DOP',tipo:'RECIBO INTERNO'});
+  const qr=document.getElementById('receiptQr');
+  qr.innerHTML='';
+  if(window.QRCode){
+    new QRCode(qr,{text:qrText,width:160,height:160,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }else{
+    qr.textContent='Datos: '+qrText;
+  }
   document.body.classList.add('printing-ticket');
   const limpiar=()=>{document.body.classList.remove('printing-ticket');window.removeEventListener('afterprint',limpiar);};
   window.addEventListener('afterprint',limpiar);
@@ -259,5 +271,6 @@ document.getElementById('ticket').addEventListener('keydown',e=>{
 document.getElementById('entrada').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('salida').focus()});
 document.getElementById('salida').addEventListener('keydown',e=>{if(e.key==='Enter')calcular()});
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </body>
 </html>
