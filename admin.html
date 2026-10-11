@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b4f9c">
+<title>Administración | Cobro de estacionamiento</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eef3f8;font-family:Arial,sans-serif;color:#17212b}
+header{background:#0b4f9c;color:#fff;padding:20px;text-align:center}header h1{margin:0;font-size:26px}header p{margin:7px 0 0}
+main{max-width:1100px;margin:auto;padding:14px}.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 9px #0002}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:170px}
+input{width:100%;height:46px;border:1px solid #b9c7d6;border-radius:9px;padding:8px;font-size:16px}
+button,.btn{border:0;border-radius:9px;padding:12px 16px;background:#0b4f9c;color:white;font-size:15px;font-weight:bold;cursor:pointer;text-decoration:none;display:inline-block;margin:5px 5px 5px 0}
+.secondary{background:#e5edf7;color:#0b4f9c}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.stat{background:#f2f6fb;border-radius:10px;padding:14px}.stat span{display:block;font-size:13px;color:#536579}.stat strong{display:block;font-size:24px;margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px 8px;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}th{background:#eaf1f8}
+.tablewrap{overflow:auto}.detail{background:#f8fafc;padding:10px;margin-top:8px;border-radius:8px}.muted{color:#5b6b7b;font-size:13px}.warn{background:#fff7e5;border-left:4px solid #d99b18;padding:12px;border-radius:6px;font-size:14px}
+@media(max-width:600px){header h1{font-size:21px}main{padding:8px}.card{padding:11px}th,td{padding:7px 5px;font-size:12px}}
+</style>
+</head>
+<body>
+<header><h1>ADMINISTRACIÓN DE CIERRES</h1><p>COBRO DE ESTACIONAMIENTO</p></header>
+<main>
+<div class="card">
+<a class="btn secondary" href="./index.html">← Volver al cobro</a>
+<button onclick="cargar()">ACTUALIZAR HISTORIAL</button>
+<button onclick="exportar()" class="secondary">EXPORTAR CIERRES CSV</button>
+<div class="warn"><strong>Importante:</strong> esta primera versión guarda el historial en el almacenamiento del navegador de este dispositivo. No sincroniza con otras computadoras ni es un acceso administrativo protegido por contraseña. No borre los datos del navegador si necesita conservar los cierres.</div>
+</div>
+<div class="card">
+<div class="row">
+<div><label for="fecha">Filtrar por fecha</label><input type="date" id="fecha" onchange="render()"></div>
+<div><label for="operador">Filtrar por operador</label><input id="operador" placeholder="Nombre del operador" oninput="render()"></div>
+</div>
+</div>
+<div class="card summary">
+<div class="stat"><span>Cierres encontrados</span><strong id="cantidad">0</strong></div>
+<div class="stat"><span>Tickets incluidos</span><strong id="tickets">0</strong></div>
+<div class="stat"><span>Total recaudado</span><strong id="total">RD$0</strong></div>
+</div>
+<div class="card">
+<h2>Historial de cierres</h2>
+<div id="vacio" class="muted">Todavía no hay cierres guardados en este navegador.</div>
+<div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Operador</th><th>Tickets</th><th>Total</th><th>Detalle</th></tr></thead><tbody id="filas"></tbody></table></div>
+</div>
+</main>
+<script>
+const CLOSURES_KEY='cobro_estacionamiento_cierres_v1';
+let cierres=[];
+function pesos(n){return 'RD$'+Number(n||0).toLocaleString('es-DO',{maximumFractionDigits:2})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function cargar(){try{cierres=JSON.parse(localStorage.getItem(CLOSURES_KEY)||'[]')}catch(e){cierres=[]}render()}
+function render(){
+ const f=document.getElementById('fecha').value, op=document.getElementById('operador').value.trim().toLowerCase();
+ const list=cierres.filter(c=>(!f||String(c.fecha||'').split('/').reverse().join('-')===f||c.fechaISO===f)&&(!op||String(c.operador||'').toLowerCase().includes(op)));
+ document.getElementById('cantidad').textContent=list.length;
+ document.getElementById('tickets').textContent=list.reduce((s,c)=>s+Number(c.cantidad||0),0);
+ document.getElementById('total').textContent=pesos(list.reduce((s,c)=>s+Number(c.total||0),0));
+ document.getElementById('vacio').style.display=list.length?'none':'block';
+ document.getElementById('filas').innerHTML=list.map((c,i)=>'<tr><td>'+esc(c.fecha||'')+'</td><td>'+esc(c.hora||'')+'</td><td>'+esc(c.operador||'No indicado')+'</td><td>'+Number(c.cantidad||0)+'</td><td><strong>'+pesos(c.total)+'</strong></td><td><button onclick="detalle(\''+esc(c.id||String(i))+'\')">VER TICKETS</button><div id="d'+i+'"></div></td></tr>').join('');
+ window._cierresFiltrados=list;
+}
+function detalle(id){
+ const c=(window._cierresFiltrados||[]).find(x=>(x.id||'')===id);
+ if(!c)return;
+ const idx=(window._cierresFiltrados||[]).indexOf(c), area=document.getElementById('d'+idx);
+ if(!area)return;
+ area.innerHTML='<div class="detail"><strong>Detalle del cierre</strong><div class="tablewrap"><table><thead><tr><th>Ticket</th><th>Entrada</th><th>Salida</th><th>Tiempo (min)</th><th>Monto</th><th>Operador</th></tr></thead><tbody>'+(c.tickets||[]).map(t=>'<tr><td>'+esc(t.ticket)+'</td><td>'+esc(t.entrada)+'</td><td>'+esc(t.salida)+'</td><td>'+Number(t.minutos||0)+'</td><td>'+pesos(t.total)+'</td><td>'+esc(t.operador||c.operador)+'</td></tr>').join('')+'</tbody></table></div></div>';
+}
+function exportar(){
+ const list=window._cierresFiltrados||[];
+ if(!list.length){alert('No hay cierres para exportar.');return}
+ const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const rows=[['Fecha','Hora','Operador','Cantidad de tickets','Total DOP','ID cierre']];
+ list.forEach(c=>rows.push([c.fecha,c.hora,c.operador,c.cantidad,c.total,c.id]));
+ const csv='\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));a.download='cierres-estacionamiento.csv';a.click();URL.revokeObjectURL(a.href);
+}
+cargar();
+</script>
+</body>
+</html>
