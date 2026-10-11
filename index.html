@@ -16,6 +16,7 @@ label{display:block;font-size:18px;font-weight:bold;margin:10px 0 7px}
 input{width:100%;height:58px;border:2px solid #b9c7d6;border-radius:12px;padding:8px 12px;font-size:25px;background:#fff}
 .time-entry{display:flex;gap:8px;align-items:center}
 .time-entry input{flex:1;min-width:0}
+.time-entry select{height:58px;min-width:86px;border:2px solid #b9c7d6;border-radius:12px;padding:6px;font-size:20px;background:#fff}
 .time-entry .time-now{width:112px;flex-shrink:0;margin:0;min-height:58px;font-size:17px}
 .time-help{font-size:14px;color:#536579;margin:8px 0 14px}
 @media(max-width:380px){.time-entry .time-now{width:90px;font-size:15px}}
@@ -69,15 +70,17 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <label for="entrada">Hora de entrada</label>
 <div class="time-entry">
   <input id="entrada" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej. 08:35" maxlength="5" aria-label="Hora de entrada en formato horas y minutos">
+  <select id="entradaPeriodo" aria-label="AM o PM"><option value="AM">AM</option><option value="PM">PM</option></select>
   <button type="button" class="calc time-now no-print" onclick="ponerHora('entrada')">AHORA</button>
 </div>
 
 <label for="salida">Hora de salida</label>
 <div class="time-entry">
   <input id="salida" type="text" inputmode="numeric" autocomplete="off" placeholder="Ej. 10:15" maxlength="5" aria-label="Hora de salida en formato horas y minutos">
+  <select id="salidaPeriodo" aria-label="AM o PM"><option value="AM">AM</option><option value="PM">PM</option></select>
   <button type="button" class="calc time-now no-print" onclick="ponerHora('salida')">SALIDA AHORA</button>
 </div>
-<p class="time-help">Escriba la hora con 4 números (0835) o pulse AHORA. Para registrar la hora de salida actual, pulse SALIDA AHORA. Puede usar el teclado numérico de Android.</p>
+<p class="time-help">Escriba la hora y seleccione AM o PM. Ejemplo: 08:35 AM o 10:15 PM. Los botones AHORA colocan la hora actual automáticamente.</p>
 
 <button class="calc no-print" onclick="calcular()">CALCULAR MONTO</button>
 
@@ -133,19 +136,27 @@ function normalizarHora(valor){
   if(/^\d{4}$/.test(h)) h=h.slice(0,2)+':'+h.slice(2);
   if(!/^\d{1,2}:\d{2}$/.test(h)) return '';
   const p=h.split(':').map(Number);
-  if(p[0]>23||p[1]>59) return '';
+  if(p[0]<1||p[0]>12||p[1]>59) return '';
   return String(p[0]).padStart(2,'0')+':'+String(p[1]).padStart(2,'0');
 }
-function minutos(h){
+function minutos(h,periodo){
   h=normalizarHora(h);
   if(!h) return null;
   const p=h.split(':').map(Number);
-  return p[0]*60+p[1];
+  let hora=p[0]%12;
+  if(periodo==='PM') hora+=12;
+  return hora*60+p[1];
+}
+function horaFormateada(id){
+  const h=normalizarHora(document.getElementById(id).value);
+  return h ? h+' '+document.getElementById(id+'Periodo').value : '';
 }
 function ponerHora(id){
   const ahora=new Date();
-  const hora=String(ahora.getHours()).padStart(2,'0')+':'+String(ahora.getMinutes()).padStart(2,'0');
-  document.getElementById(id).value=hora;
+  let h=ahora.getHours();
+  document.getElementById(id+'Periodo').value=h>=12?'PM':'AM';
+  h=h%12||12;
+  document.getElementById(id).value=String(h).padStart(2,'0')+':'+String(ahora.getMinutes()).padStart(2,'0');
   calcular();
 }
 function prepararHora(el){
@@ -153,7 +164,7 @@ function prepararHora(el){
     if(!el.value.trim()) return;
     const h=normalizarHora(el.value);
     if(h) el.value=h;
-    else alert('Hora no válida. Use formato HH:MM, por ejemplo 08:35 o 0835.');
+    else alert('Hora no válida. Use formato de 12 horas, por ejemplo 08:35 y seleccione AM o PM.');
     calcular();
   });
   el.addEventListener('input',()=>{
@@ -164,8 +175,8 @@ function prepararHora(el){
   });
 }
 function calcular(){
-  const e=minutos(document.getElementById('entrada').value);
-  const s=minutos(document.getElementById('salida').value);
+  const e=minutos(document.getElementById('entrada').value,document.getElementById('entradaPeriodo').value);
+  const s=minutos(document.getElementById('salida').value,document.getElementById('salidaPeriodo').value);
   const monto=document.getElementById('monto');
   const detalle=document.getElementById('detalle');
   if(e===null||s===null){
@@ -199,8 +210,8 @@ function pagar(){
   if(registros.some(x=>x.ticket===ticket)){alert('Ese ticket ya está registrado como pagado.');return}
   registros.push({
     ticket,
-    entrada:document.getElementById('entrada').value,
-    salida:document.getElementById('salida').value,
+    entrada:horaFormateada('entrada'),
+    salida:horaFormateada('salida'),
     minutos:r.d,total:r.total,
     fecha:new Date().toLocaleString('es-DO'),
     estado:'PAGADO',
@@ -210,8 +221,8 @@ function pagar(){
   const comprobante = {
     numero: String(registros.length).padStart(6,'0'),
     ticket,
-    entrada:document.getElementById('entrada').value,
-    salida:document.getElementById('salida').value,
+    entrada:horaFormateada('entrada'),
+    salida:horaFormateada('salida'),
     minutos:r.d,total:r.total,
     fecha:new Date().toLocaleDateString('es-DO'),
     hora:new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit',hour12:true})
