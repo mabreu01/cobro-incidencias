@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#0b4f9c">
-<title>Cobro por Incidencias</title>
+<title>Cobro de estacionamiento</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#eef3f8;font-family:Arial,sans-serif;color:#17212b}
@@ -47,7 +47,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 </style>
 </head>
 <body>
-<header><h1>COBRO POR INCIDENCIAS</h1><p>Control de contingencia y cobro de tickets</p></header>
+<header><h1>COBRO DE ESTACIONAMIENTO</h1><p>Control de contingencia y cobro de tickets</p></header>
 <main>
 <div class="tabs no-print">
 <button id="tabCobro" class="active" onclick="showTab('cobro')">COBRO</button>
@@ -208,7 +208,7 @@ function imprimirComprobante(x){
   const area=document.getElementById('printTicket');
   area.innerHTML=`
     <h2>COMPROBANTE DE PAGO</h2>
-    <div><strong>COBRO POR INCIDENCIAS</strong></div>
+    <div><strong>COBRO DE ESTACIONAMIENTO</strong></div>
     <div class="small">RECIBO INTERNO — NO FISCAL</div>
     <div class="line"></div>
     <div class="left">
@@ -261,7 +261,7 @@ function imprimirCierre(){
   const area=document.getElementById('printCierre');
   area.innerHTML=`
     <h2>CIERRE DE CAJA</h2>
-    <div><strong>COBRO POR INCIDENCIAS</strong></div>
+    <div><strong>COBRO DE ESTACIONAMIENTO</strong></div>
     <div class="small">RESUMEN DE COBROS REGISTRADOS</div>
     <div class="line"></div>
     <div class="left">
