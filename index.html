@@ -263,6 +263,7 @@ function imprimirComprobante(x){
     <div class="small">Escanee el QR para ver los datos de este recibo</div>
     <div id="receiptQr" class="qr-wrap"></div>
     <div class="small">Comprobante interno</div>
+    <div class="small" style="margin-top:5px;font-size:9px">Disculpe los inconvenientes. Entregar este recibo a la salida.</div>
   `;
   const qrText=JSON.stringify({comprobante:x.numero,ticket:x.ticket,fecha:x.fecha,hora:x.hora,entrada:x.entrada,salida:x.salida,tiempo:formato(x.minutos),total:x.total,moneda:'DOP',tipo:'RECIBO INTERNO'});
   const qr=document.getElementById('receiptQr');
