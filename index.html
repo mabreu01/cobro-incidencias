@@ -123,11 +123,9 @@ function guardarOperador(){
 }
 function inicializarOperador(){
   const campo=document.getElementById('operador');
-  campo.value=operador;
-  if(operador){
-    document.getElementById('operadorEstado').textContent='Operador activo: '+operador;
-    document.getElementById('operadorCard').classList.add('hidden');
-  }
+  campo.value='';
+  document.getElementById('operadorEstado').textContent='Escriba su nombre para comenzar a registrar cobros.';
+  document.getElementById('operadorCard').classList.remove('hidden');
 }
 
 function normalizarHora(valor){
