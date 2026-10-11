@@ -104,6 +104,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 </div>
 <button class="calc no-print" onclick="window.print()">IMPRIMIR REPORTE</button>
 <button class="pay no-print" onclick="imprimirCierre()">IMPRIMIR CIERRE DE CAJA</button>
+<button class="calc no-print" onclick="window.open('admin.html','_blank')">ABRIR PÁGINA ADMINISTRATIVA</button>
 </section>
 </main>
 
@@ -113,6 +114,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <script>
 const KEY='cobro_incidencias_v1';
 const OPERATOR_KEY='cobro_estacionamiento_operador';
+const CLOSURES_KEY='cobro_estacionamiento_cierres_v1';
 let operador=localStorage.getItem(OPERATOR_KEY)||'';
 let registros=JSON.parse(localStorage.getItem(KEY)||'[]');
 
@@ -327,7 +329,19 @@ function imprimirCierre(){
     window.removeEventListener('afterprint',limpiar);
     if(cierreProcesado)return;
     cierreProcesado=true;
-    // El cierre impreso conserva el resumen; se vacía el registro para iniciar un nuevo turno.
+    // Guardar una copia permanente en el historial local antes de limpiar el turno.
+    const cierres=JSON.parse(localStorage.getItem(CLOSURES_KEY)||'[]');
+    cierres.unshift({
+      id:'CIERRE-'+ahora.getTime(),
+      fecha,
+      hora,
+      operador:operador||'No indicado',
+      cantidad:registros.length,
+      total,
+      tickets:JSON.parse(JSON.stringify(registros))
+    });
+    localStorage.setItem(CLOSURES_KEY,JSON.stringify(cierres));
+    // Vaciar los tickets del turno activo después de guardar el cierre.
     registros=[];
     localStorage.setItem(KEY,JSON.stringify(registros));
     document.getElementById('buscar').value='';
