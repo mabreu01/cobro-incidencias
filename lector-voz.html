@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0b4f9c">
+<title>LECTOR DE PANTALLA - MAM</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#edf2f7;color:#17212b;font-family:Arial,sans-serif}
+header{background:#0b4f9c;color:#fff;padding:18px;text-align:center}h1{font-size:24px;margin:0}header p{margin:8px 0 0;font-size:15px}
+main{max-width:760px;margin:auto;padding:12px}.card{background:#fff;border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 9px #0002}
+label{display:block;font-weight:bold;font-size:17px;margin:12px 0 7px}
+textarea,select,input{width:100%;font-size:18px;padding:12px;border:2px solid #bac8d8;border-radius:10px;background:#fff}
+textarea{min-height:180px;resize:vertical}
+button,.link{display:block;width:100%;border:0;border-radius:12px;padding:16px 10px;margin-top:10px;font-size:18px;font-weight:bold;text-align:center;text-decoration:none;cursor:pointer}
+.primary{background:#0b4f9c;color:white}.secondary{background:#e1ebf6;color:#123e69}.stop{background:#a92323;color:#fff}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.status{font-size:15px;background:#eef5fc;padding:12px;border-radius:10px;margin-top:10px;line-height:1.4}
+.note{font-size:14px;line-height:1.5;color:#4b5d70}.small{font-size:14px;color:#4b5d70}
+@media(max-width:420px){h1{font-size:21px}.row{grid-template-columns:1fr 1fr}.card{padding:12px}}
+</style>
+</head>
+<body>
+<header><h1>LECTOR DE TEXTO A VOZ</h1><p>Asistente de lectura para el sistema de parqueo</p></header>
+<main>
+<section class="card">
+<h2 style="margin-top:0">1. Abrir el sistema</h2>
+<a class="link primary" href="http://172.24.4.77:1124/login" target="_blank" rel="noopener">ABRIR SISTEMA DE PARQUEO</a>
+<p class="note">Abre el sistema en otra pestaña. Inicia sesión allí como de costumbre. No escribas tu contraseña en esta herramienta.</p>
+</section>
+<section class="card">
+<h2 style="margin-top:0">2. Texto que quieres escuchar</h2>
+<label for="texto">Pega o escribe aquí el mensaje visible</label>
+<textarea id="texto" placeholder="En la página del parqueo, selecciona y copia el mensaje, vuelve aquí y pégalo."></textarea>
+<label for="voz">Voz disponible en el dispositivo</label>
+<select id="voz"><option value="">Buscando voces instaladas…</option></select>
+<label for="velocidad">Velocidad de lectura</label>
+<input id="velocidad" type="range" min="0.65" max="1.25" step="0.05" value="0.9">
+<div class="small">Más lento ← 0.9 → Más rápido</div>
+<div class="row">
+<button id="leer" class="primary">▶ LEER</button>
+<button id="pausar" class="secondary">Ⅱ PAUSAR / SEGUIR</button>
+</div>
+<button id="detener" class="stop">■ DETENER</button>
+<div id="estado" class="status" role="status" aria-live="polite">Preparado. Pulsa “Leer” para probar la voz.</div>
+</section>
+<section class="card">
+<h2 style="margin-top:0">3. Prueba rápida</h2>
+<button id="prueba" class="secondary">PROBAR VOZ EN ESPAÑOL</button>
+<p class="note"><b>Importante:</b> esta página convierte en voz el texto que pegues o escribas. Por seguridad, una página web normal no puede leer automáticamente el contenido de otra pestaña o de una página interna del sistema. Para lectura automática tipo macro hace falta una aplicación Android con permiso de Accesibilidad o integrar el lector dentro del sistema.</p>
+</section>
+</main>
+<script>
+(function(){
+ const text=document.getElementById('texto'), voiceSelect=document.getElementById('voz'), status=document.getElementById('estado');
+ const synth=window.speechSynthesis;
+ function setStatus(s){status.textContent=s;}
+ function loadVoices(){
+   if(!synth){voiceSelect.innerHTML='<option>Este navegador no ofrece síntesis de voz.</option>';setStatus('La síntesis de voz no está disponible en este navegador.');return;}
+   const voices=synth.getVoices()||[];
+   voiceSelect.innerHTML='';
+   const spanish=voices.filter(v=>/^es([_-]|$)/i.test(v.lang));
+   const list=spanish.length?spanish:voices;
+   if(!list.length){voiceSelect.innerHTML='<option value="">No hay voces cargadas todavía</option>';return;}
+   list.forEach((v)=>{const o=document.createElement('option');o.value=voices.indexOf(v);o.textContent=v.name+' ('+v.lang+')'+(v.default?' — predeterminada':'');voiceSelect.appendChild(o);});
+   const preferred=list.find(v=>/dominican|dominicana|es-do|es_419|latin|latino|mexic|es-mx|es-mx/i.test(v.name+' '+v.lang))||list.find(v=>/^es/i.test(v.lang));
+   if(preferred)voiceSelect.value=String(voices.indexOf(preferred));
+   setStatus(spanish.length?'Voces en español disponibles: '+spanish.length+'. La voz depende de lo instalado en la SUNMI.':'No se detectó una voz española; instala una voz compatible en Ajustes de Android y vuelve a probar.');
+ }
+ function speak(value){
+   if(!synth){setStatus('Este navegador no admite lectura de texto a voz.');return;}
+   const clean=(value||'').trim();
+   if(!clean){setStatus('Primero pega o escribe el texto que deseas escuchar.');return;}
+   synth.cancel();
+   const u=new SpeechSynthesisUtterance(clean);
+   const voices=synth.getVoices()||[];
+   const chosen=voices[Number(voiceSelect.value)];
+   if(chosen){u.voice=chosen;u.lang=chosen.lang;}else{u.lang='es-419';}
+   u.rate=Number(document.getElementById('velocidad').value);
+   u.pitch=1;u.volume=1;
+   u.onstart=()=>setStatus('Leyendo…');
+   u.onend=()=>setStatus('Lectura terminada.');
+   u.onerror=(e)=>setStatus('No se pudo reproducir la voz ('+(e.error||'error')+'). Revisa el motor de síntesis de Android.');
+   synth.speak(u);
+ }
+ document.getElementById('leer').addEventListener('click',()=>speak(text.value));
+ document.getElementById('prueba').addEventListener('click',()=>speak('Prueba de lectura. El sistema de parqueo está listo. Por favor, revise el mensaje en pantalla.'));
+ document.getElementById('detener').addEventListener('click',()=>{if(synth)synth.cancel();setStatus('Lectura detenida.');});
+ document.getElementById('pausar').addEventListener('click',()=>{if(!synth)return;if(synth.speaking&&!synth.paused){synth.pause();setStatus('Lectura pausada. Pulsa de nuevo para continuar.');}else if(synth.paused){synth.resume();setStatus('Continuando lectura…');}else setStatus('No hay lectura activa.');});
+ if(synth){loadVoices();synth.onvoiceschanged=loadVoices;setTimeout(loadVoices,1200);}
+})();
+</script>
+</body></html>
