@@ -360,7 +360,33 @@ function cierresFiltrados(){
     return (!fecha||fecha===iso||fecha===c.fechaISO)&&(!op||String(c.operador||'').toLowerCase().includes(op));
   });
 }
-function pesosAdmin(n){return 'RD
+function pesosAdmin(n){return 'RD$'+Number(n||0).toLocaleString('es-DO',{maximumFractionDigits:2})}
+function renderAdmin(){
+  const list=cierresFiltrados();
+  const total=list.reduce((s,c)=>s+Number(c.total||0),0);
+  const tickets=list.reduce((s,c)=>s+Number(c.cantidad||0),0);
+  document.getElementById('adminResumen').textContent=list.length+' cierre(s) | '+tickets+' ticket(s) | Total: '+pesosAdmin(total);
+  document.getElementById('adminTabla').innerHTML=list.map((c,i)=>'<tr><td>'+escaparHTML(c.fecha||'')+'</td><td>'+escaparHTML(c.hora||'')+'</td><td>'+escaparHTML(c.operador||'No indicado')+'</td><td>'+Number(c.cantidad||0)+'</td><td>'+pesosAdmin(c.total)+'</td><td><button type="button" class="calc" style="min-height:38px;font-size:13px;margin:0" onclick="verDetalleCierre('+i+')">VER</button></td></tr>').join('');
+  window._adminCierres=list;
+}
+function verDetalleCierre(i){
+  const c=(window._adminCierres||[])[i];
+  if(!c)return;
+  const filas=(c.tickets||[]).map(x=>'<tr><td>'+escaparHTML(x.ticket||'')+'</td><td>'+escaparHTML(x.entrada||'')+'</td><td>'+escaparHTML(x.salida||'')+'</td><td>'+formato(Number(x.minutos||0))+'</td><td>'+pesosAdmin(x.total)+'</td></tr>').join('');
+  const w=window.open('','_blank','width=760,height=650');
+  if(!w){alert('Permita las ventanas emergentes para ver el detalle.');return}
+  w.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Detalle de cierre</title><body style="font-family:Arial;padding:20px"><h2>Detalle de cierre</h2><p>Fecha: '+escaparHTML(c.fecha||'')+' | Hora: '+escaparHTML(c.hora||'')+'</p><p>Operador: '+escaparHTML(c.operador||'No indicado')+' | Tickets: '+Number(c.cantidad||0)+' | Total: '+pesosAdmin(c.total)+'</p><table border="1" cellspacing="0" cellpadding="8" style="border-collapse:collapse;width:100%"><thead><tr><th>Ticket</th><th>Entrada</th><th>Salida</th><th>Tiempo</th><th>Monto</th></tr></thead><tbody>'+filas+'</tbody></table></body></html>');
+  w.document.close();
+}
+function exportarCierres(){
+  const list=cierresFiltrados();
+  if(!list.length){alert('No hay cierres para exportar.');return}
+  const quote=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const rows=[['Fecha','Hora','Operador','Cantidad de tickets','Total DOP','ID cierre']];
+  list.forEach(c=>rows.push([c.fecha,c.hora,c.operador,c.cantidad,c.total,c.id]));
+  const blob=new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='cierres-estacionamiento.csv';a.click();URL.revokeObjectURL(a.href);
+}
 function imprimirCierre(){
   if(!registros.length){alert('No hay cobros registrados para cerrar.');return}
   const ahora=new Date();
