@@ -49,6 +49,12 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <body>
 <header><h1>COBRO DE ESTACIONAMIENTO</h1><p>Control de contingencia y cobro de tickets</p></header>
 <main>
+<section id="operadorCard" class="card no-print">
+<label for="operador">Nombre de quien se conecta / operador</label>
+<input id="operador" autocomplete="name" placeholder="Escriba su nombre">
+<button type="button" class="pay" onclick="guardarOperador()">CONTINUAR</button>
+<div id="operadorEstado" class="info">El nombre aparecerá en los reportes y cierres de caja.</div>
+</section>
 <div class="tabs no-print">
 <button id="tabCobro" class="active" onclick="showTab('cobro')">COBRO</button>
 <button id="tabReporte" onclick="showTab('reporte')">REPORTE</button>
@@ -90,7 +96,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <input class="search" id="buscar" placeholder="Buscar por número de ticket" oninput="renderReporte()">
 <div id="resumen" class="info"></div>
 <div style="overflow:auto">
-<table><thead><tr><th>Ticket</th><th>Entrada</th><th>Salida</th><th>Tiempo</th><th>Monto</th></tr></thead>
+<table><thead><tr><th>Ticket</th><th>Entrada</th><th>Salida</th><th>Tiempo</th><th>Monto</th><th>Operador</th></tr></thead>
 <tbody id="tabla"></tbody></table>
 </div>
 <button class="calc no-print" onclick="window.print()">IMPRIMIR REPORTE</button>
@@ -103,7 +109,26 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 
 <script>
 const KEY='cobro_incidencias_v1';
+const OPERATOR_KEY='cobro_estacionamiento_operador';
+let operador=localStorage.getItem(OPERATOR_KEY)||'';
 let registros=JSON.parse(localStorage.getItem(KEY)||'[]');
+
+function guardarOperador(){
+  const nombre=document.getElementById('operador').value.trim();
+  if(!nombre){alert('Escriba el nombre del operador para continuar.');return}
+  operador=nombre;
+  localStorage.setItem(OPERATOR_KEY,operador);
+  document.getElementById('operadorEstado').textContent='Operador activo: '+operador;
+  document.getElementById('operadorCard').classList.add('hidden');
+}
+function inicializarOperador(){
+  const campo=document.getElementById('operador');
+  campo.value=operador;
+  if(operador){
+    document.getElementById('operadorEstado').textContent='Operador activo: '+operador;
+    document.getElementById('operadorCard').classList.add('hidden');
+  }
+}
 
 function normalizarHora(valor){
   let h=String(valor||'').trim().replace(/[^0-9:]/g,'');
@@ -180,7 +205,8 @@ function pagar(){
     salida:document.getElementById('salida').value,
     minutos:r.d,total:r.total,
     fecha:new Date().toLocaleString('es-DO'),
-    estado:'PAGADO'
+    estado:'PAGADO',
+    operador:operador||'No indicado'
   });
   localStorage.setItem(KEY,JSON.stringify(registros));
   const comprobante = {
@@ -214,6 +240,7 @@ function imprimirComprobante(x){
     <div class="left">
       <div><strong>Comprobante:</strong> ${x.numero}</div>
       <div><strong>Ticket:</strong> ${escaparHTML(x.ticket)}</div>
+      <div><strong>Operador:</strong> ${escaparHTML(x.operador||operador||'No indicado')}</div>
       <div><strong>Fecha:</strong> ${x.fecha}</div>
       <div><strong>Hora de pago:</strong> ${x.hora}</div>
       <div><strong>Entrada:</strong> ${escaparHTML(x.entrada)}</div>
@@ -267,6 +294,7 @@ function imprimirCierre(){
     <div class="left">
       <div><strong>Fecha de cierre:</strong> ${fecha}</div>
       <div><strong>Hora de cierre:</strong> ${hora}</div>
+      <div><strong>Operador:</strong> ${escaparHTML(operador||'No indicado')}</div>
       <div><strong>Cantidad de tickets:</strong> ${registros.length}</div>
     </div>
     <div class="line"></div>
@@ -304,8 +332,9 @@ function renderReporte(){
   const rows=registros.filter(x=>x.ticket.toLowerCase().includes(q));
   const total=registros.reduce((a,x)=>a+x.total,0);
   document.getElementById('resumen').textContent=registros.length+' ticket(s) | Total recaudado: RD$'+total.toLocaleString('es-DO');
-  document.getElementById('tabla').innerHTML=rows.map(x=>`<tr><td>${x.ticket}</td><td>${x.entrada}</td><td>${x.salida}</td><td>${formato(x.minutos)}</td><td>RD$${x.total.toLocaleString('es-DO')}</td></tr>`).join('');
+  document.getElementById('tabla').innerHTML=rows.map(x=>`<tr><td>${escaparHTML(x.ticket)}</td><td>${escaparHTML(x.entrada)}</td><td>${escaparHTML(x.salida)}</td><td>${formato(x.minutos)}</td><td>RD${x.total.toLocaleString('es-DO')}</td><td>${escaparHTML(x.operador||'No indicado')}</td></tr>`).join('');
 }
+inicializarOperador();
 ['entrada','salida'].forEach(id=>prepararHora(document.getElementById(id)));
 document.getElementById('ticket').addEventListener('input',()=>{
   const valor=document.getElementById('ticket').value.trim();
