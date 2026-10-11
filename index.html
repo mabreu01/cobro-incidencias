@@ -109,7 +109,16 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 </section>
 
 <section id="admin" class="card hidden">
+<div id="adminLogin">
+<h2>Acceso administrativo</h2>
+<label for="adminClave">Ingrese la clave</label>
+<input id="adminClave" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Clave administrativa" style="font-size:24px">
+<button type="button" class="pay" onclick="validarAdmin()">ENTRAR</button>
+<div id="adminError" class="info" style="color:#b42318"></div>
+</div>
+<div id="adminContenido" class="hidden">
 <h2>Administrativo — historial de cierres</h2>
+<button type="button" class="calc no-print" onclick="cerrarSesionAdmin()">CERRAR SESIÓN ADMINISTRATIVA</button>
 <p class="time-help">Aquí se guardan los cierres realizados desde este navegador. Use los filtros para consultar por fecha u operador.</p>
 <div class="time-entry" style="margin-bottom:10px">
 <div style="flex:1"><label for="adminFecha">Fecha</label><input id="adminFecha" type="date" style="font-size:18px;height:48px" onchange="renderAdmin()"></div>
@@ -118,6 +127,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <div id="adminResumen" class="info">Cargando cierres...</div>
 <div style="overflow:auto"><table><thead><tr><th>Fecha</th><th>Hora</th><th>Operador</th><th>Tickets</th><th>Total</th><th>Detalle</th></tr></thead><tbody id="adminTabla"></tbody></table></div>
 <button type="button" class="calc no-print" onclick="exportarCierres()">EXPORTAR CIERRES CSV</button>
+</div>
 </section>
 </main>
 
@@ -297,6 +307,29 @@ function imprimirComprobante(x){
 function escaparHTML(v){
   return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
+const ADMIN_CLAVE='000000';
+let adminAutorizado=false;
+function validarAdmin(){
+  const clave=document.getElementById('adminClave').value;
+  if(clave===ADMIN_CLAVE){
+    adminAutorizado=true;
+    document.getElementById('adminLogin').classList.add('hidden');
+    document.getElementById('adminContenido').classList.remove('hidden');
+    document.getElementById('adminError').textContent='';
+    document.getElementById('adminClave').value='';
+    renderAdmin();
+  }else{
+    document.getElementById('adminError').textContent='Clave incorrecta. Intente nuevamente.';
+    document.getElementById('adminClave').value='';
+    document.getElementById('adminClave').focus();
+  }
+}
+function cerrarSesionAdmin(){
+  adminAutorizado=false;
+  document.getElementById('adminContenido').classList.add('hidden');
+  document.getElementById('adminLogin').classList.remove('hidden');
+  document.getElementById('adminClave').value='';
+}
 function showTab(t){
   document.getElementById('cobro').classList.toggle('hidden',t!=='cobro');
   document.getElementById('reporte').classList.toggle('hidden',t!=='reporte');
@@ -305,7 +338,15 @@ function showTab(t){
   document.getElementById('tabReporte').classList.toggle('active',t==='reporte');
   document.getElementById('tabAdmin').classList.toggle('active',t==='admin');
   if(t==='reporte')renderReporte();
-  if(t==='admin')renderAdmin();
+  if(t==='admin'){
+    if(adminAutorizado)renderAdmin();
+    else{
+      document.getElementById('adminLogin').classList.remove('hidden');
+      document.getElementById('adminContenido').classList.add('hidden');
+      document.getElementById('adminClave').value='';
+      document.getElementById('adminError').textContent='';
+    }
+  }
 }
 function cierresFiltrados(){
   let arr=[];
