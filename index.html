@@ -257,7 +257,7 @@ function pagar(){
   });
   localStorage.setItem(KEY,JSON.stringify(registros));
   const comprobante = {
-    numero: String(registros.length).padStart(6,'0'),
+    numero: 'P-'+new Date().getFullYear()+String(Date.now()).slice(-8),
     ticket,
     entrada:horaFormateada('entrada'),
     salida:horaFormateada('salida'),
