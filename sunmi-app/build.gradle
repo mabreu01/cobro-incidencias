@@ -1,0 +1,25 @@
+plugins {
+    id 'com.android.application' version '7.4.2'
+}
+
+android {
+    namespace 'com.mamparking.cobro'
+    compileSdk 33
+
+    defaultConfig {
+        applicationId 'com.mamparking.cobro'
+        minSdk 21
+        targetSdk 28
+        versionCode 1
+        versionName '1.0'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'com.sunmi:printerlibrary:1.0.18'
+}
