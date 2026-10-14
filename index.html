@@ -280,9 +280,9 @@ function pagar(){
 function imprimirComprobante(x){
   const area=document.getElementById('printTicket');
   area.innerHTML=`
-    <h2>COMPROBANTE DE PAGO</h2>
+    <h2>FACTURA / RECIBO DE PAGO</h2>
     <div><strong>COBRO DE ESTACIONAMIENTO</strong></div>
-    <div class="small">RECIBO INTERNO — NO FISCAL</div>
+    <div class="small">COMPROBANTE DE PAGO DE ESTACIONAMIENTO</div>
     <div class="line"></div>
     <div class="left">
       <div><strong>Comprobante:</strong> ${x.numero}</div>
@@ -300,7 +300,7 @@ function imprimirComprobante(x){
     <div>Gracias por su visita</div>
     <div class="small">Escanee el QR para ver los datos de este recibo</div>
     <div id="receiptQr" class="qr-wrap"></div>
-    <div class="small">Comprobante interno</div>
+    <div class="small">Documento interno de pago — no válido como comprobante fiscal DGII</div>
     <div class="small" style="margin-top:5px;font-size:9px">Disculpe los inconvenientes. Entregar este recibo a la salida.</div>
   `;
   const qrText=JSON.stringify({comprobante:x.numero,ticket:x.ticket,fecha:x.fecha,hora:x.hora,entrada:x.entrada,salida:x.salida,tiempo:formato(x.minutos),total:x.total,moneda:'DOP',tipo:'RECIBO INTERNO'});
