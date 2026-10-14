@@ -29,14 +29,27 @@ button{width:100%;min-height:58px;border:0;border-radius:12px;margin-top:12px;fo
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left}th{background:#eaf1f8}
 .hidden{display:none}.search{margin-bottom:10px}
 @media(max-width:500px){header h1{font-size:24px}main{padding:9px}.card{padding:13px}.amount strong{font-size:38px}}
-@media print{header,.tabs,.no-print,.search{display:none!important}.card{box-shadow:none}.report-only{display:block!important}body{background:#fff}}
-@page{size:80mm auto;margin:4mm}
-#printTicket{display:none}
 @media print{
-  body.printing-ticket *{visibility:hidden!important}
-  body.printing-ticket #printTicket,body.printing-ticket #printTicket *{visibility:visible!important}
-  body.printing-ticket #printTicket{display:block!important;position:absolute;left:0;top:0;width:72mm;padding:0;margin:0;font-family:Arial,sans-serif;color:#000;background:#fff}
+  @page{size:80mm auto;margin:3mm}
+  body{background:#fff!important;color:#000!important}
+  header,.tabs,.no-print,.search,.time-help{display:none!important}
+  .card{box-shadow:none!important;border:0!important;padding:0!important;margin:0!important}
+  table{width:100%;border-collapse:collapse;font-size:8px!important}
+  th,td{padding:2px!important;border-bottom:1px solid #aaa!important;white-space:normal!important;overflow-wrap:anywhere}
+  body.printing-ticket * ,body.printing-close * ,body.printing-report *{visibility:hidden!important}
+  body.printing-ticket #printTicket,body.printing-ticket #printTicket *,
+  body.printing-close #printCierre,body.printing-close #printCierre *,
+  body.printing-report #reporte,body.printing-report #reporte *{visibility:visible!important}
+  body.printing-ticket #printTicket,body.printing-close #printCierre{
+    display:block!important;position:absolute;left:0;top:0;width:74mm;padding:0;margin:0;
+    font-family:Arial,sans-serif;font-size:11px;line-height:1.3;color:#000;background:#fff
+  }
+  body.printing-report #reporte{display:block!important;position:absolute;left:0;top:0;width:74mm;padding:0!important;margin:0!important}
+  body.printing-report #reporte h2{font-size:13px;text-align:center;margin:0 0 6px}
+  body.printing-report #resumen{font-size:9px!important;margin:0 0 6px}
 }
+@page{size:80mm auto;margin:3mm}
+#printTicket,#printCierre{display:none}
 .receipt{text-align:center;font-size:12px;line-height:1.35}
 .receipt h2{font-size:17px;margin:0 0 4px}
 .receipt .line{border-top:1px dashed #000;margin:8px 0}
@@ -103,7 +116,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;borde
 <table><thead><tr><th>Ticket</th><th>Entrada</th><th>Salida</th><th>Tiempo</th><th>Monto</th><th>Operador</th></tr></thead>
 <tbody id="tabla"></tbody></table>
 </div>
-<button class="calc no-print" onclick="window.print()">IMPRIMIR REPORTE</button>
+<button class="calc no-print" onclick="imprimirReporte()">IMPRIMIR REPORTE</button>
 <button class="pay no-print" onclick="imprimirCierre()">IMPRIMIR CIERRE DE CAJA</button>
 <button class="calc no-print" onclick="window.open('admin.html','_blank')">ABRIR PÁGINA ADMINISTRATIVA</button>
 </section>
@@ -446,6 +459,17 @@ function imprimirCierre(){
   window.addEventListener('afterprint',limpiar);
   window.print();
   setTimeout(limpiar,2000);
+}
+function imprimirReporte(){
+  if(!registros.length){alert('No hay cobros registrados para imprimir.');return}
+  document.body.classList.add('printing-report');
+  const limpiar=()=>{
+    document.body.classList.remove('printing-report');
+    window.removeEventListener('afterprint',limpiar);
+  };
+  window.addEventListener('afterprint',limpiar);
+  window.print();
+  setTimeout(limpiar,5000);
 }
 function renderReporte(){
   const q=document.getElementById('buscar').value.trim().toLowerCase();
