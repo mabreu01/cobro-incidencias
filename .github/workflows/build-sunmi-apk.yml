@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'sunmi-app/**'
+      - 'index.html'
       - '.github/workflows/build-sunmi-apk.yml'
 
 jobs:
