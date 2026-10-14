@@ -311,6 +311,11 @@ function imprimirComprobante(x){
   }else{
     qr.textContent='Datos: '+qrText;
   }
+  // En la aplicación nativa SUNMI, imprimir directamente por la impresora integrada.
+  if(window.SunmiPrinter && window.SunmiPrinter.isReady && window.SunmiPrinter.isReady()){
+    window.SunmiPrinter.printReceipt(area.innerText,qrText);
+    return;
+  }
   document.body.classList.add('printing-ticket');
   const limpiar=()=>{document.body.classList.remove('printing-ticket');window.removeEventListener('afterprint',limpiar);};
   window.addEventListener('afterprint',limpiar);
@@ -456,12 +461,86 @@ function imprimirCierre(){
     document.getElementById('buscar').value='';
     renderReporte();
   };
+  // Dentro de la app SUNMI el cierre sale por la impresora interna, sin diálogo de Chrome.
+  if(window.SunmiPrinter && window.SunmiPrinter.isReady && window.SunmiPrinter.isReady()){
+    window.SunmiPrinter.printText(area.innerText);
+    setTimeout(limpiar,1500);
+    return;
+  }
   window.addEventListener('afterprint',limpiar);
   window.print();
   setTimeout(limpiar,2000);
 }
 function imprimirReporte(){
   if(!registros.length){alert('No hay cobros registrados para imprimir.');return}
+  // La app nativa imprime un reporte legible en papel térmico de 58/80 mm.
+  if(window.SunmiPrinter && window.SunmiPrinter.isReady && window.SunmiPrinter.isReady()){
+    const total=registros.reduce((s,x)=>s+Number(x.total||0),0);
+    const lineas=[
+      'REPORTE DE COBROS',
+      'COBRO DE ESTACIONAMIENTO',
+      'Fecha: '+new Date().toLocaleDateString('es-DO'),
+      'Operador: '+(operador||'No indicado'),
+      '--------------------------------',
+      ...registros.map((x,i)=>(i+1)+'. Ticket: '+x.ticket+'\\n   Entrada: '+x.entrada+'\\n   Salida: '+x.salida+'\\n   Tiempo: '+formato(x.minutos)+'\\n   Monto: RD
+function renderReporte(){
+  const q=document.getElementById('buscar').value.trim().toLowerCase();
+  const rows=registros.filter(x=>x.ticket.toLowerCase().includes(q));
+  const total=registros.reduce((a,x)=>a+x.total,0);
+  document.getElementById('resumen').textContent=registros.length+' ticket(s) | Total recaudado: RD$'+total.toLocaleString('es-DO');
+  document.getElementById('tabla').innerHTML=rows.map(x=>`<tr><td>${escaparHTML(x.ticket)}</td><td>${escaparHTML(x.entrada)}</td><td>${escaparHTML(x.salida)}</td><td>${formato(x.minutos)}</td><td>RD${x.total.toLocaleString('es-DO')}</td><td>${escaparHTML(x.operador||'No indicado')}</td></tr>`).join('');
+}
+inicializarOperador();
+['entrada','salida'].forEach(id=>prepararHora(document.getElementById(id)));
+document.getElementById('ticket').addEventListener('input',()=>{
+  const valor=document.getElementById('ticket').value.trim();
+  if(valor)document.getElementById('scanEstado').textContent='Ticket leído: '+valor;
+});
+document.getElementById('ticket').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    document.getElementById('entrada').focus();
+  }
+});
+document.getElementById('entrada').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('salida').focus()});
+document.getElementById('salida').addEventListener('keydown',e=>{if(e.key==='Enter')calcular()});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</body>
+</html>+Number(x.total||0).toLocaleString('es-DO')),
+      '--------------------------------',
+      'Tickets: '+registros.length,
+      'TOTAL: RD
+function renderReporte(){
+  const q=document.getElementById('buscar').value.trim().toLowerCase();
+  const rows=registros.filter(x=>x.ticket.toLowerCase().includes(q));
+  const total=registros.reduce((a,x)=>a+x.total,0);
+  document.getElementById('resumen').textContent=registros.length+' ticket(s) | Total recaudado: RD$'+total.toLocaleString('es-DO');
+  document.getElementById('tabla').innerHTML=rows.map(x=>`<tr><td>${escaparHTML(x.ticket)}</td><td>${escaparHTML(x.entrada)}</td><td>${escaparHTML(x.salida)}</td><td>${formato(x.minutos)}</td><td>RD${x.total.toLocaleString('es-DO')}</td><td>${escaparHTML(x.operador||'No indicado')}</td></tr>`).join('');
+}
+inicializarOperador();
+['entrada','salida'].forEach(id=>prepararHora(document.getElementById(id)));
+document.getElementById('ticket').addEventListener('input',()=>{
+  const valor=document.getElementById('ticket').value.trim();
+  if(valor)document.getElementById('scanEstado').textContent='Ticket leído: '+valor;
+});
+document.getElementById('ticket').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    e.preventDefault();
+    document.getElementById('entrada').focus();
+  }
+});
+document.getElementById('entrada').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('salida').focus()});
+document.getElementById('salida').addEventListener('keydown',e=>{if(e.key==='Enter')calcular()});
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</body>
+</html>+total.toLocaleString('es-DO'),
+      'Documento interno — no fiscal'
+    ];
+    window.SunmiPrinter.printText(lineas.join('\\n'));
+    return;
+  }
   document.body.classList.add('printing-report');
   const limpiar=()=>{
     document.body.classList.remove('printing-report');
