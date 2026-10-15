@@ -266,16 +266,22 @@ function pagar(){
     hora:new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit',hour12:true})
   };
   document.getElementById('estado').innerHTML='<span class="ok">✓ TICKET PAGADO Y REGISTRADO</span>';
+  // Preparar e iniciar la impresión con los datos del recibo ya guardados.
   imprimirComprobante(comprobante);
+  // Dejar el formulario de cobro en blanco para el próximo vehículo.
   setTimeout(()=>{
     document.getElementById('ticket').value='';
     document.getElementById('entrada').value='';
     document.getElementById('salida').value='';
+    document.getElementById('entradaPeriodo').value='AM';
+    document.getElementById('salidaPeriodo').value='AM';
     document.getElementById('monto').textContent='RD$0';
-    document.getElementById('detalle').textContent='Listo para el siguiente ticket.';
+    document.getElementById('detalle').textContent='';
     document.getElementById('estado').textContent='';
+    document.getElementById('scanEstado').textContent='Conecte el lector QR y pulse el botón antes de escanear.';
+    document.getElementById('printTicket').innerHTML='';
     document.getElementById('ticket').focus();
-  },900);
+  },1200);
 }
 
 // Detecta las interfaces de impresión que algunos navegadores/entornos SUNMI exponen.
