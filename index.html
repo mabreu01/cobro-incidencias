@@ -277,6 +277,34 @@ function pagar(){
     document.getElementById('ticket').focus();
   },900);
 }
+
+// Detecta las interfaces de impresión que algunos navegadores/entornos SUNMI exponen.
+// Una página web no puede crear esta conexión por sí sola; utiliza únicamente puentes ya disponibles.
+function imprimirDirectoSUNMI(texto, qrTexto){
+  const puentes = [window.SunmiPrinter, window.sunmiPrinter, window.sunmi, window.SUNMI];
+  for(const puente of puentes){
+    if(!puente) continue;
+    try{
+      if(typeof puente.isReady === 'function' && !puente.isReady()) continue;
+      if(typeof puente.printReceipt === 'function'){
+        puente.printReceipt(texto, qrTexto || '');
+        return true;
+      }
+      if(typeof puente.printText === 'function'){
+        puente.printText(texto);
+        return true;
+      }
+      if(typeof puente.print === 'function'){
+        puente.print(texto);
+        return true;
+      }
+    }catch(err){
+      console.warn('No se pudo imprimir por el puente SUNMI detectado:', err);
+    }
+  }
+  return false;
+}
+
 function imprimirComprobante(x){
   const area=document.getElementById('printTicket');
   area.innerHTML=`
@@ -312,10 +340,7 @@ function imprimirComprobante(x){
     qr.textContent='Datos: '+qrText;
   }
   // En la aplicación nativa SUNMI, imprimir directamente por la impresora integrada.
-  if(window.SunmiPrinter && window.SunmiPrinter.isReady && window.SunmiPrinter.isReady()){
-    window.SunmiPrinter.printReceipt(area.innerText,qrText);
-    return;
-  }
+  if(imprimirDirectoSUNMI(area.innerText,qrText)) return;
   document.body.classList.add('printing-ticket');
   const limpiar=()=>{document.body.classList.remove('printing-ticket');window.removeEventListener('afterprint',limpiar);};
   window.addEventListener('afterprint',limpiar);
@@ -462,8 +487,7 @@ function imprimirCierre(){
     renderReporte();
   };
   // Dentro de la app SUNMI el cierre sale por la impresora interna, sin diálogo de Chrome.
-  if(window.SunmiPrinter && window.SunmiPrinter.isReady && window.SunmiPrinter.isReady()){
-    window.SunmiPrinter.printText(area.innerText);
+  if(imprimirDirectoSUNMI(area.innerText)){
     setTimeout(limpiar,1500);
     return;
   }
@@ -477,7 +501,7 @@ function imprimirReporte(){
   const lineas=['REPORTE DE COBROS','COBRO DE ESTACIONAMIENTO','Fecha: '+new Date().toLocaleDateString('es-DO'),'Operador: '+(operador||'No indicado'),'--------------------------------'];
   registros.forEach((x,i)=>lineas.push((i+1)+'. Ticket: '+x.ticket,'Entrada: '+x.entrada,'Salida: '+x.salida,'Tiempo: '+formato(x.minutos),'Monto: RD$'+Number(x.total||0).toLocaleString('es-DO'),'--------------------------------'));
   lineas.push('Tickets: '+registros.length,'TOTAL: RD$'+total.toLocaleString('es-DO'),'Documento interno — no fiscal');
-  if(window.SunmiPrinter && window.SunmiPrinter.isReady && window.SunmiPrinter.isReady()){window.SunmiPrinter.printText(lineas.join('\n'));return}
+  if(imprimirDirectoSUNMI(lineas.join('\n'))) return;
   const area=document.getElementById('reporte');
   document.body.classList.add('printing-report');
   const limpiar=()=>{document.body.classList.remove('printing-report');window.removeEventListener('afterprint',limpiar)};
