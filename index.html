@@ -287,7 +287,9 @@ function pagar(){
 // Detecta las interfaces de impresión que algunos navegadores/entornos SUNMI exponen.
 // Una página web no puede crear esta conexión por sí sola; utiliza únicamente puentes ya disponibles.
 function imprimirDirectoSUNMI(texto, qrTexto){
-  const puentes = [window.SunmiPrinter, window.sunmiPrinter, window.sunmi, window.SUNMI];
+  // Puente H5 usado en WebView Android según la documentación de SUNMI:
+  // Android puede exponer window.lee.funAndroid(texto) para enviar el recibo al servicio nativo.
+  const puentes = [window.SunmiPrinter, window.sunmiPrinter, window.sunmi, window.SUNMI, window.sunmiPrinterService];
   for(const puente of puentes){
     if(!puente) continue;
     try{
@@ -304,9 +306,23 @@ function imprimirDirectoSUNMI(texto, qrTexto){
         puente.print(texto);
         return true;
       }
+      if(puente.printer && typeof puente.printer.printText === 'function'){
+        puente.printer.printText({text:texto});
+        return true;
+      }
     }catch(err){
-      console.warn('No se pudo imprimir por el puente SUNMI detectado:', err);
+      console.warn('Falló una interfaz de impresión SUNMI:', err);
     }
+  }
+  // Algunas aplicaciones SUNMI integran el puente nativo con el nombre "lee".
+  // Solo existe si el navegador/WebView que abre la página lo ha registrado.
+  try{
+    if(window.lee && typeof window.lee.funAndroid === 'function'){
+      window.lee.funAndroid(texto);
+      return true;
+    }
+  }catch(err){
+    console.warn('Falló el puente lee.funAndroid:', err);
   }
   return false;
 }
